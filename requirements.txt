@@ -1,0 +1,12 @@
+# a biblioteca, fixada no commit usado nos experimentos
+aeroledger @ git+https://github.com/heyfalheiro1537/aeroledger@7313a2560b935b4e962706f75093b15626148023
+
+# notebook
+jupyterlab>=4.2
+matplotlib>=3.8
+ipykernel>=6.29
+
+# rodar o notebook pelos testes
+pytest>=8
+nbformat>=5.10
+nbclient>=0.10
