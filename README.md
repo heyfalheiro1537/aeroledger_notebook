@@ -1,8 +1,10 @@
 # Experimentos — dados aeroportuários auditáveis (SBSJ)
 
-Cinco experimentos com a pista do aeroporto de São José dos Campos (SBSJ) para responder a uma pergunta:
+Cinco experimentos com a pista do aeroporto de São José dos Campos (SBSJ) para responder a uma pergunta sobre a arquitetura:
 
-> É possível tornar dados aeroportuários geolocalizados auditáveis — cada valor atribuível, guardado, recalculável a partir das premissas e com adulteração evidente? E onde estão os limites dessa garantia?
+> Uma arquitetura baseada em *event sourcing* garante que dados aeroportuários geolocalizados sejam **rastreáveis até a causa**, **recalculáveis a partir das premissas**, **reconstruíveis no tempo**, com **adulteração evidente** e **consistentes entre produtos**? Onde estão os limites?
+
+Cada experimento testa uma dessas propriedades, e a resposta é dada pelo código: os `assert` no fim do notebook dizem sim ou não.
 
 Os experimentos usam a biblioteca [**aeroledger**](https://github.com/heyfalheiro1537/aeroledger), cujo manual está no repositório dela. Este repositório é só a avaliação: um notebook que usa a biblioteca passo a passo, como qualquer usuário faria.
 
@@ -22,17 +24,19 @@ O AIXM, padrão de troca de dados aeronáuticos, tem disciplina para corrigir da
 
 ## Os experimentos
 
-| | Pergunta | O que o notebook faz | Contra o quê se compara |
-|---|---|---|---|
-| **E1** | Qual é o problema nas publicações de hoje? | registra a pista "como o AIXM faria" com duas edições oficiais (2022 e 2026) e compara | as próprias publicações |
-| **E2** | O número se refaz a partir das premissas? | grava só as cabeceiras e as larguras; calcula comprimento, rumos e distâncias declaradas; depois remede a cabeceira 34 | AIP (AD 2.12 e AD 2.13); um cálculo geodésico em outro código |
-| **E3** | Como estava em *t*, quem afirmou e por quê? | reconstrói o estado antes e depois da remedição; registra uma interdição temporária; lê quem afirmou cada coisa e a trilha de auditoria | o roteiro, conhecido de antemão |
-| **E4** | Alguém consegue adulterar o banco sem ser visto? | quatro ataques diretos ao banco (alterar, apagar, inserir, reescrever tudo), cada um numa cópia | o que cada ataque deveria provocar |
-| **E5** | Dois produtos do mesmo banco podem divergir? A prova é verificável por terceiros? | gera a tabela do AIP e a carta do mesmo banco; exporta os eventos e os confere com um verificador que não usa a biblioteca | PANS-AIM 2.1.3.2 (consistência entre produtos); RFC 8785 |
+| | Propriedade | Pergunta | O que o notebook faz | Resposta |
+|---|---|---|---|---|
+| **E1** | causa (contraste) | Um modelo que guarda só o valor final, como o AIXM, registra por que um valor mudou? | registra a pista "como o AIXM faria" com duas edições oficiais (2022 e 2026) e compara | não: 12 campos mudam, nenhum com causa |
+| **E2** | derivação | Guardando só as premissas, os valores publicados se recalculam dentro da precisão do AIP? Trocar uma premissa obriga a reescrever algum outro dado? | grava só as cabeceiras e as larguras; calcula comprimento, rumos e distâncias declaradas; depois remede a cabeceira 34 | sim; e a troca escreve só o levantamento e o novo referencial |
+| **E3** | reconstrução no tempo | O histórico guardado basta para reconstruir o estado de qualquer instante, com autor, motivo e causa de cada mudança? | reconstrói o estado antes e depois da remedição; registra uma interdição temporária; lê o envelope e a trilha de auditoria | sim |
+| **E4** | evidência de adulteração | Uma alteração feita direto no banco, sem passar pela biblioteca, é detectada? Qual escapa, e o que a detecta? | quatro ataques diretos ao banco (alterar, apagar, inserir, reescrever tudo), cada um numa cópia | alterar, apagar e inserir: sim; reescrever tudo escapa ao banco e só a âncora externa detecta |
+| **E5** | consistência e verificação | Dois produtos gerados do mesmo banco podem divergir? Um terceiro consegue verificar a integridade sem usar a biblioteca? | gera a tabela do AIP e a carta do mesmo banco; exporta os eventos e os confere com um verificador que não usa a biblioteca | não divergem; e o verificador independente chega ao mesmo resultado |
+
+Os valores comparados vêm do AIP (AD 2.12 e AD 2.13), de um cálculo geodésico em outro código (`geodesia.py`) e do PANS-AIM (2.2.1 para integridade, 2.1.3.2 para consistência entre produtos).
 
 ### Como foram pensados
 
-**Cada experimento responde a uma pergunta que um auditor faria**, e eles seguem uma história: o problema (E1), a solução recalculando os números (E2), a auditoria no tempo (E3), a segurança (E4) e a confiança de quem recebe os dados (E5).
+**Cada experimento testa uma propriedade da arquitetura**, formulada como pergunta que o código responde com sim ou não. Juntos, eles seguem uma história: o problema no modelo de hoje (E1), os números recalculados das premissas (E2), a auditoria no tempo (E3), a segurança (E4) e a confiança de quem recebe os dados (E5).
 
 **Os dados são reais.** Premissas e valores de comparação vêm do AIP Brasil (eAIP edição 20-2026, seções AD 2.12 e AD 2.13), da Carta de Aeródromo AIRAC 2604 e da Carta de Obstáculos AIRAC 2213. Só a remedição da cabeceira 34 e a interdição temporária são simuladas, porque não aconteceram de verdade.
 
