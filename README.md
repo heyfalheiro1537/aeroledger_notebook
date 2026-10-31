@@ -1,8 +1,8 @@
 # Experimentos — dados aeroportuários auditáveis (SBSJ)
 
-Cinco experimentos com a pista do aeroporto de São José dos Campos (SBSJ) para responder a uma pergunta sobre a arquitetura:
+Seis experimentos com a pista do aeroporto de São José dos Campos (SBSJ) para responder a uma pergunta sobre a arquitetura:
 
-> Uma arquitetura baseada em *event sourcing* garante que dados aeroportuários geolocalizados sejam **rastreáveis até a causa**, **recalculáveis a partir das premissas**, **reconstruíveis no tempo**, com **adulteração evidente** e **consistentes entre produtos**? Onde estão os limites?
+> Uma arquitetura baseada em *event sourcing* garante que dados aeroportuários geolocalizados sejam **rastreáveis até a causa**, **recalculáveis a partir das premissas**, **reconstruíveis no tempo**, com **adulteração evidente** e **consistentes entre produtos**, também para **quem lê sem acesso ao banco**? Onde estão os limites?
 
 Cada experimento testa uma dessas propriedades, e a resposta é dada pelo código: os `assert` no fim do notebook dizem sim ou não.
 
@@ -31,6 +31,7 @@ O AIXM, padrão de troca de dados aeronáuticos, tem disciplina para corrigir da
 | **E3** | reconstrução no tempo | O histórico guardado basta para reconstruir o estado de qualquer instante, com autor, motivo e causa de cada mudança? | reconstrói o estado antes e depois da remedição; registra uma interdição temporária; lê o envelope e a trilha de auditoria | sim |
 | **E4** | evidência de adulteração | Uma alteração feita direto no banco, sem passar pela biblioteca, é detectada? Qual escapa, e o que a detecta? | quatro ataques diretos ao banco (alterar, apagar, inserir, reescrever tudo), cada um numa cópia | alterar, apagar e inserir: sim; reescrever tudo escapa ao banco e só a âncora externa detecta |
 | **E5** | consistência e verificação | Dois produtos gerados do mesmo banco podem divergir? Um terceiro consegue verificar a integridade sem usar a biblioteca? | gera a tabela do AIP e a carta do mesmo banco; exporta os eventos e os confere com um verificador que não usa a biblioteca | não divergem; e o verificador independente chega ao mesmo resultado |
+| **E6** | leitura separada | Quem lê por um tópico, sem acesso ao banco, chega à mesma resposta, nunca vê uma mudança pela metade e percebe um canal adulterado? Qual adulteração escapa? | publica o ledger num tópico (CDC); compara consumidores com o banco em cada corte; corta no meio da carga do eAIP; recorta pela THR16; pergunta antes de receber e com o banco fechado; compara seis consumidores; ataca o canal de seis jeitos | sim em tudo; no meio do tópico, toda adulteração para o consumidor; cortar ou anexar no fim escapa ao elo e só a âncora detecta |
 
 Os valores comparados vêm do AIP (AD 2.12 e AD 2.13), de um cálculo geodésico em outro código (`geodesia.py`) e do PANS-AIM (2.2.1 para integridade, 2.1.3.2 para consistência entre produtos).
 
@@ -44,7 +45,9 @@ Os valores comparados vêm do AIP (AD 2.12 e AD 2.13), de um cálculo geodésico
 
 **As margens não foram escolhidas.** Elas saem da precisão com que o AIP publica cada número (o PANS-AIM define as casas decimais) ou da exatidão conhecida do cálculo de referência. Exemplo: o comprimento é publicado ao metro e as coordenadas a 0,01", então o calculado pode diferir do publicado em até 0,919 m (0,5 m do arredondamento + 0,419 m do efeito das coordenadas).
 
-**A segurança segue o PANS-AIM.** O documento da ICAO recomenda garantir a integridade com criptografia (2.2.1) e exige consistência entre produtos (2.1.3.2), mas deixa a distribuição em aberto (2.1.4, "*to be developed*"). O E4 testa a primeira; o E5 testa a segunda e ataca a terceira, mostrando que a prova de integridade viaja com os dados e pode ser conferida por quem os recebe.
+**A segurança segue o PANS-AIM.** O documento da ICAO recomenda garantir a integridade com criptografia (2.2.1) e exige consistência entre produtos (2.1.3.2), mas deixa a distribuição em aberto (2.1.4, "*to be developed*"). O E4 testa a primeira; o E5 testa a segunda e ataca a terceira, mostrando que a prova de integridade viaja com os dados e pode ser conferida por quem os recebe. O E6 vai além na terceira: propõe a distribuição (escrita no ledger, leitura por um tópico geral e consumidores, como em CQRS) e testa se ela preserva o que E3 a E5 mostraram.
+
+**A leitura separada (E6).** O ledger é publicado num tópico — o log ordenado do run — e cada consumidor lê tudo, confere hash e elo de cada mensagem, monta do lado dele só o fecho de dependência do que assinou e responde sempre com um limite explícito (um `event_id` ou um instante; não existe "agora"). A carga do eAIP entra no E2 como um grupo de cinco eventos, e o E6 mostra o motivo: o banco, cortado no meio dela, dá ASDA 16 = 2675 m sem acusar nada; o consumidor nunca corta ali. Os ataques ao canal repetem a lógica do E4, agora com o atacante no broker e o banco intocado.
 
 **As verificações foram escritas antes de rodar.** Os `assert` estão no fim do notebook, cada um com o valor esperado, a margem e a origem no comentário. O histórico do git mostra que eles entraram antes da primeira execução.
 
@@ -55,6 +58,8 @@ Os valores comparados vêm do AIP (AD 2.12 e AD 2.13), de um cálculo geodésico
 - **Nenhum sistema torna uma medição verdadeira.** Se a fonte mede errado, o banco só atribui o erro a quem mediu.
 - **Um estudo de caso:** uma pista. A composição de várias pistas é argumentada, não medida.
 - **Interoperabilidade entre organizações diferentes** não é testável aqui; o E5 mostra as condições para ela.
+- **Quem lê pelo tópico sabe que nada foi alterado, não que recebeu tudo.** Cortar o fim do tópico parece atraso, e um evento falso anexado no fim passa pelo elo; só a âncora detecta (o E6 mostra isso).
+- **O tópico é em memória.** O transporte real (Kafka) e o custo em escala não são medidos; tópicos por nó, confidencialidade e mais de um aeroporto ficam argumentados.
 
 ---
 
@@ -85,10 +90,10 @@ O notebook recria do zero um banco chamado `aeroledger_experimentos` a cada exec
 
 | Arquivo | O que é |
 |---|---|
-| `experimentos.ipynb` | o notebook: resultados de E1 a E5 e, no fim, as verificações |
+| `experimentos.ipynb` | o notebook: resultados de E1 a E6 e, no fim, as verificações |
 | `fontes.py` | os dados do SBSJ, com a fonte de cada um |
 | `apoio.py` | funções pequenas usadas pelo notebook (banco, referencial, exportação) |
-| `ataques.py` | os ataques do E4 |
+| `ataques.py` | os ataques do E4 (ao banco) e do E6 (ao tópico) |
 | `geodesia.py` | cálculo geodésico de referência (Vincenty), sem a biblioteca |
 | `verificador_independente.py` | confere a cadeia e o comprimento a partir do JSON exportado, sem a biblioteca |
 | `tests/` | roda o notebook; confere o gabarito no caso publicado de Vincenty; compara a forma canônica do verificador com a da biblioteca |
