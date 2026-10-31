@@ -24,3 +24,17 @@ def test_numeros():
 def test_objetos():
     v = {"b": [1, 2.5, None, True], "a": {"€": "x", "\r": 0.0}, "1": "ç"}
     assert jcs(v).encode() == canonico(v)
+
+
+def test_hash_do_evento_com_e_sem_grupo():
+    from aeroledger.topico import hash_do_evento
+    from verificador_independente import ENVELOPE, GRUPO, sha
+    base = {"event_id": 5, "run_id": "r", "feature_id": "F", "feature_type": "runway", "event_type": "BASELINE",
+            "asserted_by": "x", "owner_ref": None, "reason": None, "caused_by": None, "prev_hash": None,
+            "campos": [{"path": "b", "op": "set", "next": 1.5}, {"path": "a", "op": "set", "next": None}]}
+    for grupo in ((None, None), (5, 3)):
+        ev = dict(base, grupo_id=grupo[0], grupo_n=grupo[1])
+        conteudo = {k: ev[k] for k in ENVELOPE}
+        conteudo.update({k: ev[k] for k in GRUPO if ev.get(k) is not None})
+        conteudo["campos"] = sorted(ev["campos"], key=lambda c: c["path"])
+        assert sha(conteudo) == hash_do_evento(ev)

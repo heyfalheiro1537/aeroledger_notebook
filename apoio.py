@@ -113,7 +113,8 @@ def exportar(conn, run, caminho):
     """
     with conn.cursor() as cur:
         cur.execute("""SELECT event_id, run_id, feature_id, feature_type, event_type, asserted_by, owner_ref,
-                              reason, caused_by, prev_hash, hash FROM event WHERE run_id = %s ORDER BY event_id""", (run,))
+                              reason, caused_by, prev_hash, grupo_id, grupo_n, hash
+                       FROM event WHERE run_id = %s ORDER BY event_id""", (run,))
         nomes = [d.name for d in cur.description]
         eventos = [dict(zip(nomes, r)) for r in cur.fetchall()]
         cur.execute("SELECT event_id, path, op, next FROM event_field WHERE run_id = %s", (run,))

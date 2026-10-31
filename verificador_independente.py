@@ -9,6 +9,7 @@ Especificação que ele implementa:
   hash(evento) = SHA-256 do JCS (RFC 8785) de
       { event_id, run_id, feature_id, feature_type, event_type, asserted_by,
         owner_ref, reason, caused_by, prev_hash,
+        [grupo_id, grupo_n,]          (só quando o evento é de um grupo)
         campos: [ {path, op, next} ordenados por path ] }
 
   cadeia íntegra  ⇔  para cada evento, em ordem de event_id:
@@ -29,6 +30,7 @@ import geodesia  # noqa: E402   (gabarito geodésico independente)
 
 ENVELOPE = ("event_id", "run_id", "feature_id", "feature_type", "event_type", "asserted_by",
             "owner_ref", "reason", "caused_by", "prev_hash")
+GRUPO = ("grupo_id", "grupo_n")
 
 
 # ---------------------------------------------------------------- JCS, pela especificação
@@ -92,6 +94,7 @@ def verificar(export):
     anterior = None
     for e in export["eventos"]:
         conteudo = {k: e[k] for k in ENVELOPE}
+        conteudo.update({k: e[k] for k in GRUPO if e.get(k) is not None})
         conteudo["campos"] = sorted(({"path": c["path"], "op": c["op"], "next": c["next"]} for c in e["campos"]),
                                     key=lambda c: c["path"])
         if e["prev_hash"] != anterior or sha(conteudo) != e["hash"]:

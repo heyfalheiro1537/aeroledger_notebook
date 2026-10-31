@@ -97,3 +97,53 @@ def detectar(conn, run_id, ancora):
     vc = ledger.verify_chain(conn, run_id)
     cab = ledger.cabeca(conn, run_id)
     return vc, bool(vc) or tuple(cab) != tuple(ancora)
+
+
+# ---------------------------------------------------------------- E6: ataques ao tópico
+# O atacante agora está no canal (o broker), não no banco. O ledger nunca é tocado.
+
+ATAQUES_TOPICO = {
+    "alterar": "trocar o referencial adotado na mensagem k, sem recalcular o hash",
+    "alterar_rehash": "trocar o referencial na mensagem k e recalcular o hash dela",
+    "remover": "remover a mensagem k",
+    "inserir": "inserir um evento falso depois de k, com elo e hash corretos",
+    "truncar_fim": "remover as últimas mensagens",
+    "anexar_fim": "anexar no fim um evento falso, com elo e hash corretos",
+}
+
+
+def _falso(depois_de, run_id):
+    from aeroledger.topico import hash_do_evento
+    ev = {"event_id": depois_de["event_id"] + 1, "run_id": run_id, "feature_id": "SBSJ-FALSO",
+          "feature_type": "restriction", "event_type": "BASELINE", "asserted_by": "intruso",
+          "owner_ref": "SBSJ-RWY", "reason": None, "caused_by": None, "prev_hash": depois_de["hash"],
+          "grupo_id": None, "grupo_n": None,
+          "campos": [{"path": "adc.texto", "op": "set", "next": "RWY 16/34 fechada"}]}
+    ev["hash"] = hash_do_evento(ev)
+    return {"tipo": "evento", "evento": ev}
+
+
+def atacar_topico(topico, ataque, k_event_id, campo, valor_falso):
+    """Adultera as mensagens do tópico (em memória) e devolve o índice da mensagem k."""
+    from aeroledger.topico import hash_do_evento
+    msgs = topico.mensagens
+    i = next(i for i, m in enumerate(msgs) if m["tipo"] == "evento" and m["evento"]["event_id"] == k_event_id)
+    ev = msgs[i]["evento"]
+    if ataque in ("alterar", "alterar_rehash"):
+        for c in ev["campos"]:
+            if c["path"] == campo:
+                c["next"] = valor_falso
+        if ataque == "alterar_rehash":
+            ev["hash"] = hash_do_evento(ev)
+    elif ataque == "remover":
+        del msgs[i]
+    elif ataque == "inserir":
+        msgs.insert(i + 1, _falso(ev, ev["run_id"]))
+    elif ataque == "truncar_fim":
+        del msgs[-2:]
+    elif ataque == "anexar_fim":
+        ultimo = next(m["evento"] for m in reversed(msgs) if m["tipo"] == "evento")
+        msgs.append(_falso(ultimo, ultimo["run_id"]))
+    else:
+        raise ValueError(ataque)
+    return i
