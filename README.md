@@ -96,6 +96,7 @@ O notebook recria do zero um banco chamado `aeroledger_experimentos` a cada exec
 | `ataques.py` | os ataques do E4 (ao banco) e do E6 (ao tópico) |
 | `geodesia.py` | cálculo geodésico de referência (Vincenty), sem a biblioteca |
 | `verificador_independente.py` | confere a cadeia e o comprimento a partir do JSON exportado, sem a biblioteca |
+| `sbsj_ledger.sql` | esquema do banco extraído em SQLite (≥ 3.45): tabelas, gatilhos de só inserção e encadeamento, visões de leitura e consultas de exemplo |
 | `tests/` | roda o notebook; confere o gabarito no caso publicado de Vincenty; compara a forma canônica do verificador com a da biblioteca |
 
 ## Ressalva
