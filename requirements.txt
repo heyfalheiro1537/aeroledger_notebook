@@ -1,5 +1,5 @@
 # a biblioteca, fixada no commit usado nos experimentos
-aeroledger @ git+https://github.com/heyfalheiro1537/aeroledger@e93b71844b5f09c454d25f297bc415971b0d0c29
+aeroledger @ git+https://github.com/heyfalheiro1537/aeroledger@fe478ea52c6d625fbcf2a1565cd8c509daacc8ab
 
 # notebook
 jupyterlab>=4.2
