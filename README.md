@@ -26,7 +26,7 @@ O AIXM, padrão de troca de dados aeronáuticos, tem disciplina para corrigir da
 
 | | Propriedade | Pergunta | O que o notebook faz | Resposta |
 |---|---|---|---|---|
-| **E1** | causa (contraste) | Um modelo que guarda só o valor final, como o AIXM, registra por que um valor mudou? | registra a pista "como o AIXM faria" com duas edições oficiais (2022 e 2026) e compara | não: 12 campos mudam, nenhum com causa |
+| **E1** | causa (caracterização) | O registro das edições publicadas, que guarda só o valor final de cada uma, registra por que um valor mudou? | registra a pista como as duas edições oficiais chegam ao usuário (2022 e 2026) e compara; não emula o AIXM completo | não: 12 campos mudam, nenhum com causa |
 | **E2** | derivação | Guardando só as premissas, os valores publicados se recalculam dentro da precisão do AIP? Trocar uma premissa obriga a reescrever algum outro dado? | grava só as cabeceiras e as larguras; calcula comprimento, rumos e distâncias declaradas; depois remede a cabeceira 34 | sim; e a troca escreve só o levantamento e o novo referencial |
 | **E3** | reconstrução no tempo | O histórico guardado basta para reconstruir o estado de qualquer instante, com autor, motivo e causa de cada mudança? | reconstrói o estado antes e depois da remedição; registra uma interdição temporária; lê o envelope e a trilha de auditoria | sim |
 | **E4** | evidência de adulteração | Uma alteração feita direto no banco, sem passar pela biblioteca, é detectada? Qual escapa, e o que a detecta? | quatro ataques diretos ao banco (alterar, apagar, inserir, reescrever tudo), cada um numa cópia | alterar, apagar e inserir: sim; reescrever tudo escapa ao banco e só a âncora externa detecta |
