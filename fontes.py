@@ -24,6 +24,24 @@ LARGURA_RWY = 45
 SWY = {"comprimento": 283, "largura": 45}             # além da THR 34; dá ASDA à RWY 16
 SUPERFICIE = "ASPH"
 
+# ---------------------------------------------------------------- premissas das direções (AD 2.13)
+# A regra das distâncias declaradas não lê ausência como zero: cada direção afirma o
+# deslocamento da cabeceira e se há SWY e CWY. A AD 2.13 publica LDA = TORA nas duas
+# direções (sem deslocamento), TODA = TORA (sem CWY) e ASDA 16 > TORA 16 (a SWY além da
+# THR 34). A observação da AD 2.12 para a RWY 34 fala em "THR 34 deslocada", o que a
+# tabela não reflete; o cenário adota a tabela e registra o conflito no motivo.
+# Como estes valores são lidos das distâncias publicadas, a comparação de TODA e LDA no
+# E2 não é independente deles: ela confere a regra, não o deslocamento nem a CWY.
+DIRECOES = {
+    "16": {"deslocamento_m": 0, "tem_swy": True, "tem_cwy": False},
+    "34": {"deslocamento_m": 0, "tem_swy": False, "tem_cwy": False},
+}
+MOTIVO_DIRECOES = {
+    "16": "eAIP 20-2026, AD 2.12 (posição); AD 2.13: LDA 16 = TORA 16 e TODA 16 = TORA 16; ASDA 16 inclui a SWY",
+    "34": "eAIP 20-2026, AD 2.12 (posição); AD 2.13: LDA 34 = TORA 34, sem SWY nem CWY. "
+          "A observação da AD 2.12 descreve a THR 34 como deslocada, o que a AD 2.13 não reflete; adotada a AD 2.13",
+}
+
 # ---------------------------------------------------------------- norma (ADC)
 VARIACAO_LESTE = -22.0                                 # VAR 22°W 2026 (oeste negativo)
 
